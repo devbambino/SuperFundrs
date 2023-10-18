@@ -16,6 +16,7 @@ import NavMenu from './components/nav-menu/NavMenu'
 import SafeCoreInfo from './components/safe-core-info/SafeCoreInfo'
 import { useAccountAbstraction } from './store/accountAbstractionContext'
 import isMoneriumRedirect from './utils/isMoneriumRedirect'
+import AccountInfo from './pages/AccountInfo'
 
 function App() {
   const { setChainId } = useAccountAbstraction()
@@ -113,8 +114,8 @@ export default App
 const steps = [
   {
     // Auth Kit step
-    component: AuthKitDemo,
-    nextLabel: 'to Onramp Kit'
+    component: AccountInfo,
+    nextLabel: 'to Proposals'
   },
   {
     // Onramp Kit step

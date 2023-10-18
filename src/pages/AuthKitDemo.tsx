@@ -18,12 +18,11 @@ const AuthKitDemo = () => {
   return (
     <>
       <Typography variant="h2" component="h1">
-        The Auth Kit
+        Welcome to SuperFundrs!!!!
       </Typography>
 
       <Typography marginTop="16px">
-        Generate or authenticate a blockchain account using an email address, social media account,
-        or traditional crypto wallets like Metamask.
+        If you are an organization admin please sign in to SF using an email with the structure sf.admin@organization.edu in order to validate that you have.
       </Typography>
 
       <Typography marginTop="24px" marginBottom="8px">
@@ -74,7 +73,7 @@ const AuthKitDemo = () => {
           </Typography>
 
           <Button variant="contained" onClick={loginWeb3Auth}>
-            Connect
+            Sign In
           </Button>
         </ConnectContainer>
       )}
