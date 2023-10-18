@@ -15,12 +15,6 @@ const NavMenu = ({ setStep, activeStep }: NavMenuProps) => {
     <NavMenuContainer padding="16px" display="flex" flexDirection="column" gap={2} minWidth="368px">
       <MenuList>
         <NavItem onClick={() => setStep(0)} active={activeStep === 0}>
-          <Typography fontWeight="700" fontSize="20px">
-            Intro
-          </Typography>
-        </NavItem>
-
-        <NavItem onClick={() => setStep(1)} active={activeStep === 1}>
           <OrderLabel fontSize="10px" fontWeight="700">
             01
           </OrderLabel>
@@ -29,7 +23,7 @@ const NavMenu = ({ setStep, activeStep }: NavMenuProps) => {
           </Typography>
         </NavItem>
 
-        <NavItem onClick={() => setStep(2)} active={activeStep === 2}>
+        <NavItem onClick={() => setStep(1)} active={activeStep === 1}>
           <OrderLabel fontSize="10px" fontWeight="700">
             02
           </OrderLabel>
@@ -38,7 +32,7 @@ const NavMenu = ({ setStep, activeStep }: NavMenuProps) => {
           </Typography>
         </NavItem>
 
-        <NavItem onClick={() => setStep(3)} active={activeStep === 3}>
+        <NavItem onClick={() => setStep(2)} active={activeStep === 2}>
           <OrderLabel fontSize="10px" fontWeight="700">
             03
           </OrderLabel>

@@ -7,8 +7,8 @@ import IconButton from '@mui/material/IconButton'
 import DarkThemeIcon from '@mui/icons-material/Brightness4'
 import LightThemeIcon from '@mui/icons-material/Brightness7'
 
-import ChainLabel from 'src/components/chain-label/ChainLabel'
-import safeHeaderLogo from 'src/assets/safe-header-logo.svg'
+import sfHeaderLogo from 'src/assets/sf-logo-light-red.png'
+
 import { useTheme } from 'src/store/themeContext'
 import { useAccountAbstraction } from 'src/store/accountAbstractionContext'
 
@@ -22,26 +22,19 @@ function Header({ setStep }: HeaderProps) {
   const { chain } = useAccountAbstraction()
 
   return (
-    <AppBar position="static">
+    <AppBar position="sticky">
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
+        <Toolbar>
           {/* App Logo */}
           <img
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'pointer' , height:'70px'}}
             onClick={() => setStep(0)} // go to Home
             id="app-logo-header"
-            src={safeHeaderLogo}
+            src={sfHeaderLogo}
             alt="app logo"
           />
 
           <Box display="flex" alignItems="center" justifyContent="flex-end" flexGrow={1} gap={1}>
-            {/* chain label */}
-            {chain && (
-              <Box display="flex" justifyContent="flex-end" alignItems="center">
-                <ChainLabel chain={chain} />
-              </Box>
-            )}
-
             {/* Switch Theme mode button */}
             <Tooltip title="Switch Theme mode">
               <IconButton

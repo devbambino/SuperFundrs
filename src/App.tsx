@@ -42,7 +42,7 @@ function App() {
   const isFirstStep = activeStep === 0
   const isLastStep = activeStep === steps.length - 1
 
-  const showSafeCoreVideo = isFirstStep
+  const showSafeCoreVideo = false
 
   const ActiveStepComponent = steps[activeStep].component
   const nextLabel = steps[activeStep].nextLabel
@@ -111,10 +111,6 @@ function App() {
 export default App
 
 const steps = [
-  {
-    // Intro step
-    component: Intro
-  },
   {
     // Auth Kit step
     component: AuthKitDemo,

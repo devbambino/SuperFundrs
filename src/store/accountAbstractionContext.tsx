@@ -139,7 +139,7 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
       const openloginAdapter = new OpenloginAdapter({
         loginSettings: {
-          mfaLevel: 'mandatory'
+          mfaLevel: 'optional'
         },
         adapterSettings: {
           uxMode: 'popup',

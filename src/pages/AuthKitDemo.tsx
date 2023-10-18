@@ -84,8 +84,6 @@ const AuthKitDemo = () => {
       <Typography variant="h3" component="h2" fontWeight="700" marginBottom="16px">
         How to use it
       </Typography>
-
-      <Code text={WEB3AUTH_SNIPPET} language={'javascript'} />
     </>
   )
 }

@@ -168,8 +168,6 @@ const RelayerKitDemo = () => {
       <Typography variant="h3" component="h2" fontWeight="700" marginBottom="16px">
         How to use it
       </Typography>
-
-      <Code text={GELATO_SNIPPET} language={'javascript'} />
     </>
   )
 }
