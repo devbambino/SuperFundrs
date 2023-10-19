@@ -2,28 +2,32 @@
 pragma solidity 0.8.19;
 
 contract Organization{
-    string private id;//organization web domain
-    address private immutable admin;//organization admin
+    bool private allowFundrsWithdrawals;
+    bool private allowAdminWithdrawals;
     address private immutable owner;
     address private immutable superOwner;
     Info private info;
 
     struct Info {
-        string id;
-        address admin; //organization admin
-        address owner;
-        address superOwner;
+        bool allowProposals;
+        uint256 orgWithdrawalBalance;
+        uint256 adminBalance;
+        uint256 stakersBalance;
+        uint256[] proposals;
+        string id;//organization web domain
+        string name;
+        string description;
+        address payable admin; //organization admin
     }
 
-    constructor(string memory _orgId,address _superOwner,address _admin){
-        id = _orgId;
+    constructor(bool _allowProposals,string memory _id,string memory _name,string memory _description,address _superOwner,address payable _admin){
+        info.allowProposals = _allowProposals;
+        info.id = _id;
+        info.name = _name;
+        info.description = _description;
+        info.admin = _admin;
         superOwner = _superOwner;
         owner = msg.sender;
-        admin = _admin;
-        info.id = _orgId;
-        info.superOwner = _superOwner;
-        info.owner = msg.sender;
-        info.admin = _admin;
     }
     function getInfo() external view returns(Info memory){
         return info;
@@ -35,13 +39,13 @@ contract SuperFundrs{
     address private immutable superOwner;
     address private immutable alternativeOwner;
     mapping(address => Organization[]) private users;//user's address -> orgs' addresses
-    Organization[] public organizations;
+    Organization[] private organizations;
 
     constructor(){
         superOwner = msg.sender;
         alternativeOwner = superOwner;
     }
-	function setOrganization(string memory _orgId) external{
+	function setOrganization(bool _allowProposals,string memory _id,string memory _name,string memory _description) external{
 		Organization _newOrg = new Organization(
             _orgId,
             superOwner,
