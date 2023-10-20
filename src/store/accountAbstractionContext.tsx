@@ -17,6 +17,7 @@ import Chain from 'src/models/chain'
 import getChain from 'src/utils/getChain'
 import getMoneriumInfo, { MoneriumInfo } from 'src/utils/getMoneriumInfo'
 import isMoneriumRedirect from 'src/utils/isMoneriumRedirect'
+import { counterContractAbi } from 'src/utils/contracts-abis'
 
 type accountAbstractionContextValue = {
   ownerAddress?: string
@@ -306,11 +307,10 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
       setIsRelayerLoading(true)
 
       const signer = web3Provider.getSigner()
-      const relayPack = new GelatoRelayPack()
       const safeAccountAbstraction = new AccountAbstraction(signer)
 
+      /*const relayPack = new GelatoRelayPack()
       await safeAccountAbstraction.init({ relayPack })
-
       // we use a dump safe transfer as a demo transaction
       const dumpSafeTransafer: MetaTransactionData[] = [
         {
@@ -320,14 +320,28 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
           operation: 0 // OperationType.Call,
         }
       ]
-
       const options: MetaTransactionOptions = {
         isSponsored: false,
         gasLimit: '600000', // in this alfa version we need to manually set the gas limit
         gasToken: ethers.constants.AddressZero // native token
       }
+      const gelatoTaskId = await safeAccountAbstraction.relayTransaction(dumpSafeTransafer, options)*/
 
-      const gelatoTaskId = await safeAccountAbstraction.relayTransaction(dumpSafeTransafer, options)
+      //Interact with contract
+      const counter = "0x1098a58C437612eD44B2fCad5F0Ce756c5834E12"; 
+      const abi = counterContractAbi;
+      const contract = new ethers.Contract(counter, abi, signer);
+      const { data } = await contract.populateTransaction.incrementWithValue(10,safeSelected);
+      //const { data } = await contract.populateTransaction.increment(safeSelected);
+      const transactions: MetaTransactionData[] = [
+        {
+          to: counter,
+          data: data || '0x',
+          value: utils.parseUnits('0', 'ether').toString(),
+        }
+      ]
+
+
 
       setIsRelayerLoading(false)
       setGelatoTaskId(gelatoTaskId)

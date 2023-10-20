@@ -4,12 +4,13 @@ pragma solidity 0.8.19;
 contract Organization {
     uint256 public constant adminStakingThreshold = 0.1999 ether;
     uint256 public constant fundersStakingThreshold = 0.04999 ether;
-    address payable public admin;//organization admin
-    address private immutable owner;
-    address private immutable superOwner;
+    address payable public admin; //organization admin
+    address public immutable owner;
+    address public immutable superOwner;
     Info private info;
-    mapping(address => uint256) public usersBalances;//balance of each user in this org
-    mapping(address => string) public usersAliases;//Alias(name) of each user in this org
+    mapping(address => uint256) public usersBalances; //balance of each user in this org
+    mapping(address => string) public usersAliases; //Alias(name) of each user in this org
+    mapping(address => bool) public usersBlacklisted; //User banned from this org, always PUBLIC so other contracts could use the info
 
     struct Info {
         bool fundrsWithdrawalsAllowed;
@@ -25,27 +26,46 @@ contract Organization {
         string name;
         string description;
     }
-    modifier onlyAdmin(){
-        require(msg.sender == admin,"E201");//E201: You are not the admin of this org!!!
+    modifier onlyAdmin() {
+        require(msg.sender == admin, 'E20'); //E20: You are not the admin of this org!!!
         _;
     }
-    modifier isStaking(){
-        require(usersBalances[msg.sender] > adminStakingThreshold || msg.value > adminStakingThreshold,"E202");//E202: You need to stake at least 0.2 tokens first!!!
+    modifier poolIsEnabled() {
+        require(info.proposalsAllowed, "E20"); //E20: This organization is disabled so no staking and proposals are allowed!!!
         _;
     }
-    modifier readyToWithdraw(bool _isAdmin) {
+    modifier isStaking() {
+        require(
+            usersBalances[msg.sender] > adminStakingThreshold || msg.value > adminStakingThreshold,
+            'E20'
+        ); //E20: You need to stake at least 0.2 tokens!!!
+        _;
+    }
+    modifier isUser(){
+        require(usersBalances[msg.sender] > 0, 'E20'); //E20:You don't have a balance here!
+        _;
+    }
+    modifier readyToWithdraw() {
         bool withdrawalsAllowed = info.fundrsWithdrawalsAllowed;
-        if (_isAdmin) {
+        if (admin == msg.sender) {
             withdrawalsAllowed = info.adminWithdrawalsAllowed;
         }
-        require(withdrawalsAllowed, "E203"); //E203:Withdrawals are not allowed yet!
-        require(usersBalances[msg.sender] > 0, "E204"); //E204:You don't have a balance here!
+        require(withdrawalsAllowed, 'E20'); //E20:Withdrawals are not allowed yet!
         _;
     }
-    modifier hasPermission() {
-        require(msg.sender == superOwner, "E205"); //E205: You has no permission!!!
+    modifier onlySuperowner() {
+        require(msg.sender == superOwner, 'E20'); //E20: You has no permission!!!
         _;
     }
+    modifier onlyOwners() {
+        require(msg.sender == superOwner || msg.sender == owner, 'E20'); //E20: You has no permission!!!
+        _;
+    }
+    modifier notBlacklisted(address _sender){
+        require(!usersBlacklisted[_sender],'E20'); //E20: You are not allowed to use the app!!!
+        _;
+    }
+
     constructor(
         string memory _id,
         string memory _name,
@@ -59,34 +79,37 @@ contract Organization {
         admin = _admin;
         superOwner = _superOwner;
         owner = msg.sender;
-        usersAliases[_admin] = "Admin";
+        usersAliases[_admin] = 'Admin';
     }
 
-    function getInfo() external view returns (Info memory) {
+    function getInfo(address _requestedBy) external view onlyOwners notBlacklisted(_requestedBy) returns (Info memory){
         return info;
     }
-    function setProposalsAllowed(bool _allowProposals) external payable onlyAdmin isStaking{
+
+    function setProposalsAllowed(bool _allowProposals) external payable onlyAdmin isStaking {
         info.proposalsAllowed = _allowProposals;
         usersBalances[msg.sender] = msg.value;
         info.adminBalance += msg.value;
     }
-    function getBalance()external view returns(uint256){
+
+    function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
+
     function getUserBalance() external view returns (uint256) {
         return usersBalances[msg.sender];
     }
 
-    function userFundsWithdrawal(bool _isAdmin)
-        external
-        payable
-        readyToWithdraw(_isAdmin)
-    {
+    function getUserBalanceByAddress(address _user) external view onlyOwners returns (uint256) {
+        return usersBalances[_user];
+    }
+
+    function userFundsWithdrawal() external payable notBlacklisted(msg.sender) isUser readyToWithdraw {
         uint256 _amount = usersBalances[msg.sender];
-        (bool success, ) = payable(msg.sender).call{value: _amount}("");
-        require(success, "E206"); //E206:Failed to withdraw tokens!
+        (bool _success, ) = payable(msg.sender).call{value: _amount}('');
+        require(_success, 'E20'); //E20:Failed to withdraw tokens!
         delete usersBalances[msg.sender];
-        if (_isAdmin) {
+        if (admin == msg.sender) {
             delete info.adminBalance;
             delete info.proposalsAllowed;
         } else {
@@ -94,34 +117,44 @@ contract Organization {
         }
     }
 
-    function stakeFunds(bool _isAdmin) external payable {
+    function stakeFunds() external payable notBlacklisted(msg.sender) poolIsEnabled{
         usersBalances[msg.sender] += msg.value;
-        if (_isAdmin) {
+        if (admin == msg.sender) {
             info.adminBalance += msg.value;
         } else {
             info.fundrsBalance += msg.value;
         }
     }
+
     function setWithdrawalAllowances(
         bool _forAdmin,
         bool _forFundrs,
         bool _forOrg
-    ) external hasPermission {
+    ) external onlySuperowner {
         info.adminWithdrawalsAllowed = _forAdmin;
         info.fundrsWithdrawalsAllowed = _forFundrs;
         info.orgWithdrawalsAllowed = _forOrg;
     }
+    function getAdmin() external view onlyOwners returns(address){
+        return admin;
+    }
+    function changeAdmin(address payable _newAdmin) external onlyOwners{
+        admin = _newAdmin;
+    }
+    function setBlacklistedUser(address _blacklistedUser) external onlyOwners{
+        usersBlacklisted[_blacklistedUser] = true;
+    }
 }
 
 contract SuperFundrs {
-    address private immutable superOwner;
-    address private immutable alternativeOwner;
-    mapping(address => Organization[]) private usersOrgs; //user's address -> orgs' addresses
-    Organization[] private organizations;
+    address public immutable superOwner;
+    address public immutable alternativeOwner;
+    mapping(address => Organization[]) public usersOrgs; //user's address -> orgs' addresses
+    Organization[] public orgs;
+    mapping(string => Organization) public orgByIds;
 
-    modifier onlyGelatoRelay() {
-        bool _isGelato = true;
-        require(_isGelato, "E01"); //E01: You don't have permission to do this!!!
+    modifier isNewOrg(string memory _orgId) {
+        require(address(orgByIds[_orgId]) == address(0), 'E01'); //E01:This organization exists already, if you think this is a mistake please contact the support team!!!
         _;
     }
 
@@ -134,31 +167,40 @@ contract SuperFundrs {
         string memory _id,
         string memory _name,
         string memory _description
-    ) external onlyGelatoRelay{
-        Organization _newOrg = new Organization(_id,_name,_description, superOwner, payable(msg.sender));
-        organizations.push(_newOrg);
+    ) external isNewOrg(_id){
+        Organization _newOrg = new Organization(
+            _id,
+            _name,
+            _description,
+            superOwner,
+            payable(msg.sender)
+        );
+        orgs.push(_newOrg);
+        orgByIds[_id] = _newOrg;
         usersOrgs[msg.sender].push(_newOrg);
     }
-    function joinOrganization(Organization _org) external onlyGelatoRelay {
-        //Organization.Info memory _info = _org.getInfo();
+
+    function joinOrganization(Organization _org) external{
         usersOrgs[msg.sender].push(_org);
     }
 
-    function getUserOrgs() external view onlyGelatoRelay returns (Organization[] memory) {
+    function getUserOrgs() external view returns (Organization[] memory) {
         return usersOrgs[msg.sender];
     }
 
-    function getOrgInfo(uint256 _index) external view onlyGelatoRelay returns (Organization.Info memory) {
-        return usersOrgs[msg.sender][_index].getInfo();
+    function getOrgInfo(
+        uint256 _index
+    ) external view returns (Organization.Info memory) {
+        return usersOrgs[msg.sender][_index].getInfo(msg.sender);
     }
 
-    function getOrgInfoFromAddress(
-        Organization _org
-    ) external view onlyGelatoRelay returns (Organization.Info memory) {
-        return _org.getInfo();
+    function getOrgInfoFromId(
+        string memory _orgId
+    ) external view returns (Organization.Info memory) {
+        return orgByIds[_orgId].getInfo(msg.sender);
     }
 
     function getOrgsCount() external view returns (uint256) {
-        return organizations.length;
+        return orgs.length;
     }
 }

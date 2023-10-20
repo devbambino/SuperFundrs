@@ -59,7 +59,7 @@ const AccountInfo = () => {
             ) : (
                 <ConnectContainer display="flex" flexDirection="column" alignItems="center" gap={2}>
                     <Typography variant="h4" component="h3" fontWeight="700">
-                        {orgAddressDetected ? ('Use your email to Sign In to this organization ' + orgAddress) : ('Please ask your organization for its url or scan its QR code!!!')}
+                    Use your email to enter SuperFundrs!!!
                     </Typography>
 
                     <Button variant="contained" onClick={loginWeb3Auth} disabled={!orgAddressDetected}>
@@ -96,7 +96,7 @@ const AccountInfo = () => {
             ) : (
                 <ConnectContainer display="flex" flexDirection="column" alignItems="center" gap={2}>
                     <Typography variant="h4" component="h3" fontWeight="700">
-                        Sign in first to see your organization info...
+                    {orgAddressDetected ? ('Use your email to Sign In to this organization ' + orgAddress) : ('Please ask your organization for its url or scan its QR code!!!')}
                     </Typography>
                 </ConnectContainer>
             )}
