@@ -35,10 +35,16 @@ contract Organization {
         _;
     }
     modifier isStaking() {
+        uint256 _stakingThreshold = fundersStakingThreshold;
+        string memory _error = 'E20';//E20: You need to stake at least 0.05 tokens!!!
+        if(msg.sender == admin){
+            _stakingThreshold = adminStakingThreshold;
+            _error = 'E20';//E20: You need to stake at least 0.2 tokens!!!
+        }
         require(
-            usersBalances[msg.sender] > adminStakingThreshold || msg.value > adminStakingThreshold,
-            'E20'
-        ); //E20: You need to stake at least 0.2 tokens!!!
+            usersBalances[msg.sender] > _stakingThreshold || msg.value + usersBalances[msg.sender] > _stakingThreshold,
+            _error
+        );
         _;
     }
     modifier isUser(){
@@ -117,7 +123,7 @@ contract Organization {
         }
     }
 
-    function stakeFunds() external payable notBlacklisted(msg.sender) poolIsEnabled{
+    function stakeFunds() external payable notBlacklisted(msg.sender) poolIsEnabled isStaking{
         usersBalances[msg.sender] += msg.value;
         if (admin == msg.sender) {
             info.adminBalance += msg.value;
@@ -154,7 +160,7 @@ contract SuperFundrs {
     mapping(string => Organization) public orgByIds;
 
     modifier isNewOrg(string memory _orgId) {
-        require(address(orgByIds[_orgId]) == address(0), 'E01'); //E01:This organization exists already, if you think this is a mistake please contact the support team!!!
+        require(address(orgByIds[_orgId]) == address(0), 'E10'); //E10:This organization exists already, if you think this is a mistake please contact the support team!!!
         _;
     }
 
@@ -177,10 +183,11 @@ contract SuperFundrs {
         );
         orgs.push(_newOrg);
         orgByIds[_id] = _newOrg;
-        usersOrgs[msg.sender].push(_newOrg);
+        //usersOrgs[msg.sender].push(_newOrg);
     }
 
     function joinOrganization(Organization _org) external{
+        require(_org.getUserBalanceByAddress(msg.sender) > 0,'E10');//E10:You need to stake tokens first!!!
         usersOrgs[msg.sender].push(_org);
     }
 
