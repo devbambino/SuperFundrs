@@ -11,7 +11,7 @@ contract Organization {
     uint256 private constant fundersStakingThreshold = 0.04999 ether;
     address payable private admin; //organization admin
     address private owner;
-    address private superOwner;//PENDING: set superOwner as a predefined address to increase security
+    address private immutable superOwner;//PENDING: set superOwner as a predefined address to increase security
     Info private info;
     Treasury private treasury;
     address[] users;
@@ -40,7 +40,7 @@ contract Organization {
         _;
     }
     modifier poolIsEnabled() {
-        require(proposalsAllowed, 'E201'); //E201: This organization is disabled so no staking and proposals are allowed!!!
+        require(proposalsAllowed, 'E202'); //E202: This organization is disabled so no staking and proposals are allowed!!!
         _;
     }
     modifier isStaking() {
@@ -180,14 +180,11 @@ contract Organization {
     function setOwner(address _newOwner) external onlySuperowner{
         owner = _newOwner;
     }
-    function setSuperOwner(address _newOwner) external onlySuperowner{
-        superOwner = _newOwner;
-    }
 }
 
 contract SuperFundrs {
     address private immutable superOwner;
-    address private immutable alternativeOwner;
+    address private alternativeOwner;
     string[] private orgs;// all the organizations ids
     mapping(address => Organization[]) private usersOrgs; //user's address -> orgs' addresses
     mapping(string => Organization) private orgById;/// org id -> org address
@@ -204,10 +201,18 @@ contract SuperFundrs {
         require(msg.sender == superOwner || msg.sender == alternativeOwner, 'E103'); //E103: You has no permission!!!
         _;
     }
+    modifier onlySuperowner() {
+        require(msg.sender == superOwner, 'E105'); //E105: You has no permission!!!
+        _;
+    }
 
     constructor() {
         superOwner = msg.sender;
         alternativeOwner = superOwner;
+    }
+
+    function setAlternativeOwner(address _newOwner) external onlySuperowner{
+        alternativeOwner = _newOwner;
     }
 
     function setOrganization(

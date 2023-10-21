@@ -8,8 +8,6 @@ import '@safe-global/safe-react-components/dist/fonts.css'
 
 import Header from 'src/components/header/Header'
 import Providers from 'src/components/providers/Providers'
-import AuthKitDemo from 'src/pages/AuthKitDemo'
-import Intro from 'src/pages/Intro'
 import OnRampKitDemo from 'src/pages/OnRampKitDemo'
 import RelayerKitDemo from 'src/pages/RelayerKitDemo'
 import NavMenu from './components/nav-menu/NavMenu'

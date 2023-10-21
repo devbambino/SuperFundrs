@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Divider from '@mui/material/Divider'
+import SendIcon from '@mui/icons-material/SendRounded'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -13,12 +14,28 @@ import SafeAccount from 'src/components/safe-account/SafeAccount'
 import { ConnectContainer, ConnectedContainer } from 'src/components/styles'
 import { useAccountAbstraction } from 'src/store/accountAbstractionContext'
 import AddressLabel from 'src/components/address-label/AddressLabel'
+import { LinearProgress } from '@mui/material'
+import GelatoTaskStatusLabel from 'src/components/gelato-task-status-label/GelatoTaskStatusLabel'
 
 const AccountInfo = () => {
-    const { loginWeb3Auth, isAuthenticated } = useAccountAbstraction()
+    const { chainId,
+        chain,
+
+        safeSelected,
+        safeBalance,
+
+        isRelayerLoading,
+        gelatoTaskId, loginWeb3Auth, isAuthenticated, 
+        getUserOrgs ,
+        getOrgFromId,
+        getOrgsCount,
+        getUserBalance
+    
+    } = useAccountAbstraction()
     const queryParams = queryString.parse(window.location.search)
     const [orgAddressDetected, setOrgAddressDetected] = useState(queryParams.org ? true : false)
     const [orgAddress, setOrgAddress] = useState(queryParams.org || '')
+    const [transactionHash, setTransactionHash] = useState<string>('')
 
     return (
         <>
@@ -59,10 +76,10 @@ const AccountInfo = () => {
             ) : (
                 <ConnectContainer display="flex" flexDirection="column" alignItems="center" gap={2}>
                     <Typography variant="h4" component="h3" fontWeight="700">
-                    Use your email to enter SuperFundrs!!!
+                        Use your email to enter SuperFundrs!!!
                     </Typography>
 
-                    <Button variant="contained" onClick={loginWeb3Auth} disabled={!orgAddressDetected}>
+                    <Button variant="contained" onClick={loginWeb3Auth}>
                         Sign In
                     </Button>
                 </ConnectContainer>
@@ -74,32 +91,74 @@ const AccountInfo = () => {
                 Your Organization Info
             </Typography>
 
-            {isAuthenticated ? (
-                <Box display="flex" gap={3}>
-                    {/* safe Account */}
-                    <SafeAccount flex={1} />
-
-                    {/* owner ID */}
-                    <ConnectedContainer flex={2}>
-                        <Typography fontWeight="700">Owner ID</Typography>
-
-                        <Typography fontSize="14px" marginTop="8px" marginBottom="32px">
-                            Your Owner account signs transactions to unlock your assets.
-                        </Typography>
-
-                        {/* Owner details */}
-                        <ConnectedWalletLabel />
-                    </ConnectedContainer>
-                </Box>
-
-
-            ) : (
+            {!isAuthenticated ? (
                 <ConnectContainer display="flex" flexDirection="column" alignItems="center" gap={2}>
                     <Typography variant="h4" component="h3" fontWeight="700">
-                    {orgAddressDetected ? ('Use your email to Sign In to this organization ' + orgAddress) : ('Please ask your organization for its url or scan its QR code!!!')}
+                        First use your email to Sign In to an organization
                     </Typography>
                 </ConnectContainer>
+            ) : (
+                <Box display="flex" gap={3}>
+
+                    {/* Relay Transaction */}
+                    <ConnectedContainer
+                        display="flex"
+                        flex={2}
+                        flexDirection="column"
+                        gap={2}
+                        alignItems="flex-start"
+                        flexShrink={0}
+                    >
+                        <Typography fontWeight="700">Relayed transaction</Typography>
+
+                        {isRelayerLoading && <LinearProgress sx={{ alignSelf: 'stretch' }} />}
+
+                        {!isRelayerLoading && (
+                            <>
+                                <Typography fontSize="14px">
+                                    Check the status of your relayed transaction.
+                                </Typography>
+
+                                {/* send fake transaction to Gelato relayer */}
+                                <Button
+                                    startIcon={<SendIcon />}
+                                    variant="contained"
+                                    onClick={getUserOrgs}
+                                >
+                                    Get Your Orgs
+                                </Button>
+
+                                <Button
+                                    startIcon={<SendIcon />}
+                                    variant="contained"
+                                    onClick={getOrgsCount}
+                                >
+                                    Get Orgs Count
+                                </Button>
+
+                                <Button
+                                    startIcon={<SendIcon />}
+                                    variant="contained"
+                                    onClick={getOrgFromId}
+                                >
+                                    Get Org From ID
+                                </Button>
+
+                                <Button
+                                    startIcon={<SendIcon />}
+                                    variant="contained"
+                                    onClick={getUserBalance}
+                                >
+                                    Get My Balance
+                                </Button>
+                            </>
+                        )}
+
+                    </ConnectedContainer>
+                </Box>
             )}
+
+            
         </>
     )
 }

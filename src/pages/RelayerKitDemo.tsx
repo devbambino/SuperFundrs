@@ -19,7 +19,7 @@ import { ConnectedContainer } from 'src/components/styles'
 import { useAccountAbstraction } from 'src/store/accountAbstractionContext'
 import { GELATO_SNIPPET } from 'src/utils/snippets'
 
-const transferAmount = 0.01
+const transferAmount = 0.0001
 
 const RelayerKitDemo = () => {
   const {
@@ -30,8 +30,9 @@ const RelayerKitDemo = () => {
     safeBalance,
 
     isRelayerLoading,
-    relayTransaction,
-    gelatoTaskId,
+    setOrg,
+    joinOrg,
+    setProposalsAllowed,
 
     isAuthenticated,
     loginWeb3Auth
@@ -101,19 +102,9 @@ const RelayerKitDemo = () => {
           >
             <Typography fontWeight="700">Relayed transaction</Typography>
 
-            {/* Gelato status label */}
-            {gelatoTaskId && (
-              <GelatoTaskStatusLabel
-                gelatoTaskId={gelatoTaskId}
-                chainId={chainId}
-                setTransactionHash={setTransactionHash}
-                transactionHash={transactionHash}
-              />
-            )}
-
             {isRelayerLoading && <LinearProgress sx={{ alignSelf: 'stretch' }} />}
 
-            {!isRelayerLoading && !gelatoTaskId && (
+            {!isRelayerLoading && (
               <>
                 <Typography fontSize="14px">
                   Check the status of your relayed transaction.
@@ -123,42 +114,28 @@ const RelayerKitDemo = () => {
                 <Button
                   startIcon={<SendIcon />}
                   variant="contained"
-                  disabled={!hasNativeFunds}
-                  onClick={relayTransaction}
+                  onClick={setOrg}
                 >
-                  Send Transaction
+                  Set ORG
                 </Button>
 
-                {!hasNativeFunds && (
-                  <Typography color="error">
-                    Insufficient funds. Send some funds to the Safe Account
-                  </Typography>
-                )}
+                <Button
+                  startIcon={<SendIcon />}
+                  variant="contained"
+                  onClick={setProposalsAllowed}
+                >
+                  Allow Proposals
+                </Button>
 
-                {!hasNativeFunds && chain?.faucetUrl && (
-                  <Link href={chain.faucetUrl} target="_blank">
-                    Request 0.5 {chain.token}.
-                  </Link>
-                )}
+                <Button
+                  startIcon={<SendIcon />}
+                  variant="contained"
+                  onClick={joinOrg}
+                >
+                  Join ORG
+                </Button>
               </>
             )}
-
-            {/* Transaction details */}
-            <Stack gap={0.5} display="flex" flexDirection="column">
-              <Typography>
-                Transfer {transferAmount} {chain?.token}
-              </Typography>
-
-              {safeSelected && (
-                <Stack gap={0.5} display="flex" flexDirection="row">
-                  <AddressLabel address={safeSelected} showCopyIntoClipboardButton={false} />
-
-                  <ArrowRightAltRoundedIcon />
-
-                  <AddressLabel address={safeSelected} showCopyIntoClipboardButton={false} />
-                </Stack>
-              )}
-            </Stack>
           </ConnectedContainer>
         </Box>
       )}

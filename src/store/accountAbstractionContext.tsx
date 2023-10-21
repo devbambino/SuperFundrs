@@ -17,7 +17,7 @@ import Chain from 'src/models/chain'
 import getChain from 'src/utils/getChain'
 import getMoneriumInfo, { MoneriumInfo } from 'src/utils/getMoneriumInfo'
 import isMoneriumRedirect from 'src/utils/isMoneriumRedirect'
-import { counterContractAbi } from 'src/utils/contracts-abis'
+import { superFundrsContractAbi, organizationContractAbi } from 'src/utils/contracts-abis'
 
 type accountAbstractionContextValue = {
   ownerAddress?: string
@@ -40,23 +40,39 @@ type accountAbstractionContextValue = {
   startMoneriumFlow: () => Promise<void>
   closeMoneriumFlow: () => void
   moneriumInfo?: MoneriumInfo
+  getUserOrgs: () => Promise<void>
+  setOrg: () => Promise<void>
+  joinOrg: () => Promise<void>
+  getOrgFromId: () => Promise<void>
+  getOrgsCount: () => Promise<void>
+  setProposalsAllowed: () => Promise<void>
+  getUserBalance: () => Promise<void>
+  
 }
 
 const initialState = {
   isAuthenticated: false,
-  loginWeb3Auth: () => {},
-  logoutWeb3Auth: () => {},
-  relayTransaction: async () => {},
-  setChainId: () => {},
-  setSafeSelected: () => {},
-  onRampWithStripe: async () => {},
+  loginWeb3Auth: () => { },
+  logoutWeb3Auth: () => { },
+  relayTransaction: async () => { },
+  setChainId: () => { },
+  setSafeSelected: () => { },
+  onRampWithStripe: async () => { },
   safes: [],
   chainId: initialChain.id,
   isRelayerLoading: true,
-  openStripeWidget: async () => {},
-  closeStripeWidget: async () => {},
-  startMoneriumFlow: async () => {},
-  closeMoneriumFlow: () => {}
+  openStripeWidget: async () => { },
+  closeStripeWidget: async () => { },
+  startMoneriumFlow: async () => { },
+  closeMoneriumFlow: () => { },
+  getUserOrgs: async () => { },
+  setOrg: async () => { },
+  joinOrg: async () => { },
+  getOrgFromId: async () => { },
+  getOrgsCount: async () => { },
+  setProposalsAllowed: async () => { },
+  getUserBalance: async () => { },
+  
 }
 
 const accountAbstractionContext = createContext<accountAbstractionContextValue>(initialState)
@@ -73,9 +89,14 @@ const useAccountAbstraction = () => {
 
 const MONERIUM_TOKEN = 'monerium_token'
 
+const SF_CONTRACT = process.env.REACT_APP_SUPER_FUNDRS_ADDRESS!
+
+const RELAY_KEY = process.env.REACT_APP_GELATO_RELAY_API_KEY!
+
 const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => {
   // owner address from the email  (provided by web3Auth)
   const [ownerAddress, setOwnerAddress] = useState<string>('')
+  const [orgAddress, setOrgAddress] = useState<string>('')
 
   // safes owned by the user
   const [safes, setSafes] = useState<string[]>([])
@@ -111,7 +132,7 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
   const [stripePack, setStripePack] = useState<StripePack>()
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       const options: Web3AuthOptions = {
         clientId: process.env.REACT_APP_WEB3AUTH_CLIENT_ID || '',
         web3AuthNetwork: 'testnet',
@@ -184,7 +205,7 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
   useEffect(() => {
     if (web3AuthModalPack && web3AuthModalPack.getProvider()) {
-      ;(async () => {
+      ; (async () => {
         await loginWeb3Auth()
       })()
     }
@@ -208,7 +229,7 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
   // Initialize MoneriumPack
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       if (!web3Provider || !safeSelected) return
 
       const safeOwner = web3Provider.getSigner()
@@ -302,46 +323,252 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
   }, [chainId])
 
   // relay-kit implementation using Gelato
+  const getOrgFromId = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+
+      const signer = web3Provider.getSigner()
+      const superFundrs = SF_CONTRACT!
+      const abi = superFundrsContractAbi
+      const contract = new ethers.Contract(superFundrs, abi, signer)
+
+      try {
+        let orgAddress: string = await contract.getOrgFromId('university1.edu');
+        setOrgAddress(orgAddress);
+        console.log('getOrgFromId:', orgAddress)
+      } catch (error) {
+        console.log('get error:', error)
+      }
+
+      setIsRelayerLoading(false)
+    }
+  }
+  const getUserBalance = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+
+      const signer = web3Provider.getSigner()
+      const abi = organizationContractAbi
+      console.log('orgAddress',orgAddress)
+      const contract = new ethers.Contract(orgAddress, abi, signer)
+
+      try {
+        let userBalance: number = await contract.getUserBalance();
+        console.log('getUserBalance:', userBalance)
+      } catch (error) {
+        console.log('get error:', error)
+      }
+
+      setIsRelayerLoading(false)
+    }
+  }
+  const getUserOrgs = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+
+      const signer = web3Provider.getSigner()
+      const superFundrs = SF_CONTRACT!
+      const abi = superFundrsContractAbi
+      const contract = new ethers.Contract(superFundrs, abi, signer)
+
+      try {
+        let userOrgs: any[] = await contract.getUserOrgs();
+        console.log('getUserOrgs:', userOrgs)
+      } catch (error) {
+        console.log('get error:', error)
+      }
+
+      setIsRelayerLoading(false)
+    }
+  }
+  const getOrgsCount = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+
+      const signer = web3Provider.getSigner()
+      const superFundrs = SF_CONTRACT!
+      const abi = superFundrsContractAbi
+      const contract = new ethers.Contract(superFundrs, abi, signer)
+
+      try {
+        let orgsCount: number = await contract.getOrgsCount();
+        console.log('OrgsCount:', orgsCount)
+      } catch (error) {
+        console.log('get error:', error)
+      }
+
+      setIsRelayerLoading(false)
+    }
+  }
+  const setOrg = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+
+      const signer = web3Provider.getSigner()
+      const superFundrs = SF_CONTRACT!
+      const abi = superFundrsContractAbi
+      const contract = new ethers.Contract(superFundrs, abi, signer)
+      const { data } = await contract.populateTransaction.setOrganization('university1.edu', 'Universitu Uno Uno', 'This is the desc for Universitu Uno Uno')
+      const transactions: MetaTransactionData[] = [
+        {
+          to: superFundrs,
+          data: data || '0x',
+          value: utils.parseUnits('0', 'ether').toString(),
+        }
+      ]
+      const options: MetaTransactionOptions = {
+        isSponsored: true,
+      }
+
+      const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signer })
+      const safeSdk = await Safe.create({
+        ethAdapter: ethAdapter,
+        safeAddress: safeSelected
+      })
+      const relayKit = new GelatoRelayPack(RELAY_KEY)
+
+      try {
+        const safeTransaction = await relayKit.createRelayedTransaction({ safe: safeSdk, transactions, options })
+        const signedSafeTransaction = await safeSdk.signTransaction(safeTransaction)
+        const response = await relayKit.executeRelayTransaction(signedSafeTransaction, safeSdk, options)
+        console.log(response)
+        console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`)
+
+      } catch (error) {
+        console.log('relay error:', error)
+      }
+
+      setIsRelayerLoading(false)
+    }
+  }
+  const setProposalsAllowed = async () => {
+    if (web3Provider) {
+      if (orgAddress) {
+        setIsRelayerLoading(true)
+
+        const signer = web3Provider.getSigner()
+        const orgContract = orgAddress
+        const abi = organizationContractAbi
+        const contract = new ethers.Contract(orgContract, abi, signer)
+        const { data } = await contract.populateTransaction.setProposalsAllowed(true)
+        const transactions: MetaTransactionData[] = [
+          {
+            to: orgContract,
+            data: data || '0x',
+            value: utils.parseUnits('0.2', 'ether').toString(),
+          }
+        ]
+        const options: MetaTransactionOptions = {
+          isSponsored: true,
+        }
+
+        const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signer })
+        const safeSdk = await Safe.create({
+          ethAdapter: ethAdapter,
+          safeAddress: safeSelected
+        })
+        const relayKit = new GelatoRelayPack(RELAY_KEY)
+
+        try {
+          const safeTransaction = await relayKit.createRelayedTransaction({ safe: safeSdk, transactions, options })
+          const signedSafeTransaction = await safeSdk.signTransaction(safeTransaction)
+          const response = await relayKit.executeRelayTransaction(signedSafeTransaction, safeSdk, options)
+          console.log(response)
+          console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`)
+
+        } catch (error) {
+          console.log('relay error:', error)
+        }
+
+        setIsRelayerLoading(false)
+
+      } else {
+        console.log('Organization address not setted')
+      }
+
+    }
+  }
+  const joinOrg = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+
+      const signer = web3Provider.getSigner()
+      const superFundrs = SF_CONTRACT!
+      const abi = superFundrsContractAbi
+      const contract = new ethers.Contract(superFundrs, abi, signer)
+      const { data } = await contract.populateTransaction.joinOrganization('university1.edu')
+      const transactions: MetaTransactionData[] = [
+        {
+          to: superFundrs,
+          data: data || '0x',
+          value: utils.parseUnits('0', 'ether').toString(),
+        }
+      ]
+      const options: MetaTransactionOptions = {
+        isSponsored: true,
+      }
+
+      const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signer })
+      const safeSdk = await Safe.create({
+        ethAdapter: ethAdapter,
+        safeAddress: safeSelected
+      })
+      const relayKit = new GelatoRelayPack(RELAY_KEY)
+
+      try {
+        const safeTransaction = await relayKit.createRelayedTransaction({ safe: safeSdk, transactions, options })
+        const signedSafeTransaction = await safeSdk.signTransaction(safeTransaction)
+        const response = await relayKit.executeRelayTransaction(signedSafeTransaction, safeSdk, options)
+        console.log(response)
+        console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`)
+      } catch (error) {
+        console.log('relay error:', error)
+      }
+      setIsRelayerLoading(false)
+    }
+  }
   const relayTransaction = async () => {
     if (web3Provider) {
       setIsRelayerLoading(true)
 
       const signer = web3Provider.getSigner()
+      const relayPack = new GelatoRelayPack()
+      //console.log('key',process.env.GELATO_RELAY_API_KEY)
       const safeAccountAbstraction = new AccountAbstraction(signer)
 
-      /*const relayPack = new GelatoRelayPack()
       await safeAccountAbstraction.init({ relayPack })
+
       // we use a dump safe transfer as a demo transaction
-      const dumpSafeTransafer: MetaTransactionData[] = [
+      /*const dumpSafeTransafer: MetaTransactionData[] = [
         {
-          to: safeSelected,
+          to: '0x043Aa95C726E4686C7de9848bfB2E689D947b73c',
           data: '0x',
-          value: utils.parseUnits('0.01', 'ether').toString(),
+          value: utils.parseUnits('0.0002', 'ether').toString(),
           operation: 0 // OperationType.Call,
         }
       ]
+
       const options: MetaTransactionOptions = {
-        isSponsored: false,
+        isSponsored: true,
         gasLimit: '600000', // in this alfa version we need to manually set the gas limit
         gasToken: ethers.constants.AddressZero // native token
-      }
-      const gelatoTaskId = await safeAccountAbstraction.relayTransaction(dumpSafeTransafer, options)*/
-
-      //Interact with contract
-      const counter = "0x1098a58C437612eD44B2fCad5F0Ce756c5834E12"; 
-      const abi = counterContractAbi;
-      const contract = new ethers.Contract(counter, abi, signer);
-      const { data } = await contract.populateTransaction.incrementWithValue(10,safeSelected);
-      //const { data } = await contract.populateTransaction.increment(safeSelected);
-      const transactions: MetaTransactionData[] = [
+      }*/
+      const superFundrs = SF_CONTRACT
+      const abi = superFundrsContractAbi
+      const contract = new ethers.Contract(superFundrs, abi, signer)
+      const { data } = await contract.populateTransaction.getUserOrgs()
+      const dumpSafeTransafer: MetaTransactionData[] = [
         {
-          to: counter,
+          to: superFundrs,
           data: data || '0x',
           value: utils.parseUnits('0', 'ether').toString(),
         }
       ]
+      const options: MetaTransactionOptions = {
+        isSponsored: false,
+      }
 
-
+      const gelatoTaskId = await safeAccountAbstraction.relayTransaction(dumpSafeTransafer, options)
 
       setIsRelayerLoading(false)
       setGelatoTaskId(gelatoTaskId)
@@ -423,7 +650,15 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
     startMoneriumFlow,
     closeMoneriumFlow,
-    moneriumInfo
+    moneriumInfo,
+
+    getUserOrgs,
+    setOrg,
+    joinOrg,
+    getOrgFromId,
+    getOrgsCount,
+    setProposalsAllowed,
+    getUserBalance
   }
 
   return (
