@@ -25,7 +25,8 @@ The project is implementing Safe{Core} Account Abstraction (AA) SDK for:
 2. Allowing users to get the tokens (stablecoins) they need to stake in the pools using the OnRamp Kit (with Stripe). 
 3. Allowing users to make gasless transactions in a frictionless way using Relay Kit (with Gelato 1Balance). 
 
-The project smart contracts were deployed in Polygon Mumbai.
+The project smart contract were deployed in Polygon Mumbai. And the contract was verified:
+https://mumbai.polygonscan.com/address/0xF88F19b3967375399E77Dc4aefe915C69AedCBdD#code
 
 As base project was used the code in the boilerplate created by the Safe team at https://github.com/5afe/account-abstraction-demo-ui 
 
