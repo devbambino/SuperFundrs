@@ -37,7 +37,7 @@ const NavMenu = ({ setStep, activeStep }: NavMenuProps) => {
             03
           </OrderLabel>
           <Typography fontWeight="700" fontSize="20px" marginLeft="12px">
-            Relay Kit
+            Transfers
           </Typography>
         </NavItem>
       </MenuList>

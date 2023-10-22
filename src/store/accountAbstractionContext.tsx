@@ -21,6 +21,21 @@ import { superFundrsContractAbi, organizationContractAbi } from 'src/utils/contr
 
 type accountAbstractionContextValue = {
   ownerAddress?: string
+  email?: string
+  orgInfo?: OrgInfo
+  newEmail?: string
+  newName?: string
+  newDesc?: string
+  areProposalsAllowed: boolean
+  setNewEmail: (newEmail: string) => void
+  setNewName: (newName: string) => void
+  setNewDesc: (newDesc: string) => void
+  orgId?: string
+  orgName?: string
+  orgDescription?: string
+  isAdmin: boolean
+  changeUserEmail: () => void
+
   chainId: string
   safes: string[]
   chain?: Chain
@@ -47,11 +62,20 @@ type accountAbstractionContextValue = {
   getOrgsCount: () => Promise<void>
   setProposalsAllowed: () => Promise<void>
   getUserBalance: () => Promise<void>
-  
+  getOrgInfoFromId: () => Promise<void>
+  getProposalsAllowed: () => Promise<void>
+
 }
 
 const initialState = {
   isAuthenticated: false,
+  isAdmin: false,
+  areProposalsAllowed: false,
+  setNewEmail: () => { },
+  setNewName: () => { },
+  setNewDesc: () => { },
+  changeUserEmail: () => { },
+
   loginWeb3Auth: () => { },
   logoutWeb3Auth: () => { },
   relayTransaction: async () => { },
@@ -65,6 +89,7 @@ const initialState = {
   closeStripeWidget: async () => { },
   startMoneriumFlow: async () => { },
   closeMoneriumFlow: () => { },
+
   getUserOrgs: async () => { },
   setOrg: async () => { },
   joinOrg: async () => { },
@@ -72,7 +97,10 @@ const initialState = {
   getOrgsCount: async () => { },
   setProposalsAllowed: async () => { },
   getUserBalance: async () => { },
-  
+  getOrgInfoFromId: async () => { },
+  getProposalsAllowed: async () => { },
+
+
 }
 
 const accountAbstractionContext = createContext<accountAbstractionContextValue>(initialState)
@@ -87,6 +115,14 @@ const useAccountAbstraction = () => {
   return context
 }
 
+type OrgInfo = {
+  justSameOrgId: boolean,
+  proposals: number[],
+  id: string,
+  name: string,
+  description: string,
+}
+
 const MONERIUM_TOKEN = 'monerium_token'
 
 const SF_CONTRACT = process.env.REACT_APP_SUPER_FUNDRS_ADDRESS!
@@ -96,7 +132,17 @@ const RELAY_KEY = process.env.REACT_APP_GELATO_RELAY_API_KEY!
 const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => {
   // owner address from the email  (provided by web3Auth)
   const [ownerAddress, setOwnerAddress] = useState<string>('')
+  const [email, setEmail] = useState<string>('')
+  const [newEmail, setNewEmail] = useState<string>('')
+  const [newName, setNewName] = useState<string>('')
+  const [newDesc, setNewDesc] = useState<string>('')
+  const [orgId, setOrgId] = useState<string>('')
+  const [orgName, setOrgName] = useState<string>('')
+  const [orgDescription, setOrgDescription] = useState<string>('')
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const [orgAddress, setOrgAddress] = useState<string>('')
+  const [orgInfo, setOrgInfo] = useState<OrgInfo>()
+  const [areProposalsAllowed, setAreProposalsAllowed] = useState<boolean>(false)
 
   // safes owned by the user
   const [safes, setSafes] = useState<string[]>([])
@@ -118,6 +164,12 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
   // reset React state when you switch the chain
   useEffect(() => {
+    setEmail('')
+    setNewEmail('')
+    setNewDesc('')
+    setNewName('')
+    setOrgId('')
+    setIsAdmin(false)
     setOwnerAddress('')
     setSafes([])
     setChainId(chain.id)
@@ -130,6 +182,8 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
   // onRampClient
   const [stripePack, setStripePack] = useState<StripePack>()
+
+
 
   useEffect(() => {
     ; (async () => {
@@ -191,13 +245,29 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
     try {
       const { safes, eoa } = await web3AuthModalPack.signIn()
+      const userInfo = await web3AuthModalPack.getUserInfo()
       const provider = web3AuthModalPack.getProvider() as ethers.providers.ExternalProvider
 
-      // we set react state with the provided values: owner (eoa address), chain, safes owned & web3 provider
       setChainId(chain.id)
       setOwnerAddress(eoa)
       setSafes(safes || [])
       setWeb3Provider(new ethers.providers.Web3Provider(provider))
+
+      const userEmail = userInfo.email!
+      setEmail(userEmail)
+      console.log('email:', userEmail)
+      var emailArray = userInfo.email?.split('@') || ['user', 'email.edu']
+      if (emailArray[0] === 'sf.admin') {
+        setOrgId(emailArray[1])
+        setIsAdmin(true)
+        setOrgAddress('')
+        setAreProposalsAllowed(false)
+
+        getOrgInfoFromId()
+      } else {
+        setOrgId('')
+        setIsAdmin(false)
+      }
     } catch (error) {
       console.log('error: ', error)
     }
@@ -213,6 +283,7 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
   const logoutWeb3Auth = () => {
     web3AuthModalPack?.signOut()
+    setEmail('')
     setOwnerAddress('')
     setSafes([])
     setChainId(chain.id)
@@ -221,6 +292,41 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
     setGelatoTaskId(undefined)
     closeMoneriumFlow()
   }
+
+  const changeUserEmail = useCallback(async () => {
+    console.log('newEmail:', newEmail)
+    var emailArray = newEmail.split('@') || ['user', 'email.edu']
+    if (emailArray[0] === 'sf.admin') {
+      setOrgId(emailArray[1])
+      setIsAdmin(true)
+      setOrgAddress('')
+      setAreProposalsAllowed(false)
+    } else {
+      setOrgId('')
+      setIsAdmin(false)
+    }
+    setEmail(newEmail)
+  }, [newEmail,orgId])
+  useEffect(() => {
+    console.log('after changeUserEmail orgId:', orgId)
+    getOrgInfoFromId()
+  }, [changeUserEmail])
+
+  // ex. /?sf=university3.edu
+  useEffect(() => {
+    const urlSearchString = window.location.search
+    const params = new URLSearchParams(urlSearchString)
+    const _orgId = params.get('sf')
+    console.log('_orgId:', _orgId)
+    if (_orgId) {
+      setOrgId(_orgId)
+      setIsAdmin(false)
+      setOrgAddress('')
+      setAreProposalsAllowed(false)
+
+      getOrgInfoFromId()
+    }
+  }, [orgId])
 
   // current safe selected by the user
   const [safeSelected, setSafeSelected] = useState<string>('')
@@ -333,9 +439,61 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
       const contract = new ethers.Contract(superFundrs, abi, signer)
 
       try {
-        let orgAddress: string = await contract.getOrgFromId('university1.edu');
-        setOrgAddress(orgAddress);
-        console.log('getOrgFromId:', orgAddress)
+        let _orgAddress: string = await contract.getOrgFromId(orgId);
+        setOrgAddress(_orgAddress);
+        console.log('getOrgFromId orgAddress:', orgAddress)
+      } catch (error) {
+        console.log('get error:', error)
+      }
+
+      setIsRelayerLoading(false)
+    }
+  }
+  const getOrgInfoFromId = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+      console.log('getOrgInfoFromId orgId:', orgId)
+
+      const signer = web3Provider.getSigner()
+      const superFundrs = SF_CONTRACT!
+      const abi = superFundrsContractAbi
+      const contract = new ethers.Contract(superFundrs, abi, signer)
+      try {
+        let _orgAddress: string = await contract.getOrgFromId(orgId)
+        let _orgInfo: OrgInfo = await contract.getOrgInfoFromId(orgId)
+        setOrgAddress(_orgAddress)
+        setOrgInfo(_orgInfo)
+        console.log('getOrgInfoFromId _orgAddress:', _orgAddress)
+        console.log('getOrgInfoFromId _orgInfo:', _orgInfo)
+        const contractOrg = new ethers.Contract(_orgAddress, organizationContractAbi, signer)
+        let _areProposalsAllowed: boolean = await contractOrg.proposalsAllowed()
+        setAreProposalsAllowed(_areProposalsAllowed)
+        console.log('getOrgInfoFromId _areProposalsAllowed:', _areProposalsAllowed)
+
+      } catch (error) {
+        console.log('get error:', error)
+      }
+
+      setIsRelayerLoading(false)
+    }
+  }
+  useEffect(() => {
+    console.log('useEffect orgAddress:', orgAddress)
+    console.log('useEffect orgInfo:', orgInfo)
+    console.log('useEffect areProposalsAllowed:', areProposalsAllowed)
+  }, [orgAddress, orgInfo, areProposalsAllowed])
+
+  const getProposalsAllowed = async () => {
+    if (web3Provider) {
+      setIsRelayerLoading(true)
+
+      const signer = web3Provider.getSigner()
+      const contract = new ethers.Contract(orgAddress, organizationContractAbi, signer)
+
+      try {
+        let _areProposalsAllowed: boolean = await contract.proposalsAllowed();
+        setAreProposalsAllowed(_areProposalsAllowed)
+        console.log('getProposalsAllowed areProposalsAllowed:', areProposalsAllowed)
       } catch (error) {
         console.log('get error:', error)
       }
@@ -349,7 +507,7 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
 
       const signer = web3Provider.getSigner()
       const abi = organizationContractAbi
-      console.log('orgAddress',orgAddress)
+      console.log('orgAddress', orgAddress)
       const contract = new ethers.Contract(orgAddress, abi, signer)
 
       try {
@@ -367,7 +525,8 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
       setIsRelayerLoading(true)
 
       const signer = web3Provider.getSigner()
-      const superFundrs = SF_CONTRACT!
+
+      const superFundrs = orgAddress!
       const abi = superFundrsContractAbi
       const contract = new ethers.Contract(superFundrs, abi, signer)
 
@@ -402,43 +561,52 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
   }
   const setOrg = async () => {
     if (web3Provider) {
-      setIsRelayerLoading(true)
 
-      const signer = web3Provider.getSigner()
-      const superFundrs = SF_CONTRACT!
-      const abi = superFundrsContractAbi
-      const contract = new ethers.Contract(superFundrs, abi, signer)
-      const { data } = await contract.populateTransaction.setOrganization('university1.edu', 'Universitu Uno Uno', 'This is the desc for Universitu Uno Uno')
-      const transactions: MetaTransactionData[] = [
-        {
-          to: superFundrs,
-          data: data || '0x',
-          value: utils.parseUnits('0', 'ether').toString(),
+      console.log('newName:', newName, ' - newDesc:', newDesc)
+
+      if (orgId && newName && newDesc) {
+        setIsRelayerLoading(true)
+        const signer = web3Provider.getSigner()
+        const superFundrs = SF_CONTRACT!
+        const abi = superFundrsContractAbi
+        const contract = new ethers.Contract(superFundrs, abi, signer)
+        const { data } = await contract.populateTransaction.setOrganization(orgId, orgName, orgDescription)
+        const transactions: MetaTransactionData[] = [
+          {
+            to: superFundrs,
+            data: data || '0x',
+            value: utils.parseUnits('0', 'ether').toString(),
+          }
+        ]
+        const options: MetaTransactionOptions = {
+          isSponsored: true,
         }
-      ]
-      const options: MetaTransactionOptions = {
-        isSponsored: true,
+
+        const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signer })
+        const safeSdk = await Safe.create({
+          ethAdapter: ethAdapter,
+          safeAddress: safeSelected
+        })
+        const relayKit = new GelatoRelayPack(RELAY_KEY)
+
+        try {
+          const safeTransaction = await relayKit.createRelayedTransaction({ safe: safeSdk, transactions, options })
+          const signedSafeTransaction = await safeSdk.signTransaction(safeTransaction)
+          const response = await relayKit.executeRelayTransaction(signedSafeTransaction, safeSdk, options)
+          console.log(response)
+          console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`)
+
+        } catch (error) {
+          console.log('relay error:', error)
+        }
+
+        setIsRelayerLoading(false)
+
+      } else {
+        console.log('missing org info')
       }
 
-      const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signer })
-      const safeSdk = await Safe.create({
-        ethAdapter: ethAdapter,
-        safeAddress: safeSelected
-      })
-      const relayKit = new GelatoRelayPack(RELAY_KEY)
 
-      try {
-        const safeTransaction = await relayKit.createRelayedTransaction({ safe: safeSdk, transactions, options })
-        const signedSafeTransaction = await safeSdk.signTransaction(safeTransaction)
-        const response = await relayKit.executeRelayTransaction(signedSafeTransaction, safeSdk, options)
-        console.log(response)
-        console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`)
-
-      } catch (error) {
-        console.log('relay error:', error)
-      }
-
-      setIsRelayerLoading(false)
     }
   }
   const setProposalsAllowed = async () => {
@@ -496,7 +664,7 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
       const superFundrs = SF_CONTRACT!
       const abi = superFundrsContractAbi
       const contract = new ethers.Contract(superFundrs, abi, signer)
-      const { data } = await contract.populateTransaction.joinOrganization('university1.edu')
+      const { data } = await contract.populateTransaction.joinOrganization(orgId)
       const transactions: MetaTransactionData[] = [
         {
           to: superFundrs,
@@ -627,6 +795,19 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
     chainId,
     chain,
     safes,
+    email,
+    orgId,
+    orgDescription,
+    orgName,
+    isAdmin,
+    orgInfo,
+    newEmail,
+    setNewEmail,
+    setNewDesc,
+    setNewName,
+    areProposalsAllowed,
+
+    changeUserEmail,
 
     isAuthenticated,
 
@@ -658,7 +839,9 @@ const AccountAbstractionProvider = ({ children }: { children: JSX.Element }) => 
     getOrgFromId,
     getOrgsCount,
     setProposalsAllowed,
-    getUserBalance
+    getUserBalance,
+    getOrgInfoFromId,
+    getProposalsAllowed
   }
 
   return (

@@ -12,7 +12,7 @@ import authLogo from 'src/assets/web3Auth_logo.png'
 
 // TODO: rename this to connected owner?
 function ConnectedWalletLabel() {
-  const { isAuthenticated, ownerAddress, logoutWeb3Auth } = useAccountAbstraction()
+  const { isAuthenticated, ownerAddress, logoutWeb3Auth, email } = useAccountAbstraction()
 
   if (!isAuthenticated) {
     // TODO: ADD NO CONNECTED WALLET LABEL
@@ -22,10 +22,8 @@ function ConnectedWalletLabel() {
   return (
     <Stack direction="row" alignItems="center" justifyContent="space-between">
       <Stack direction="row" alignItems="center" spacing={1.5}>
-        <StyledImg src={authLogo} alt="connected Wallet logo" height={'50px'} />
-
-        <Typography variant="body2">
-          {ownerAddress && <AddressLabel address={ownerAddress} showBlockExplorerLink />}
+        <Typography variant="body2" marginTop="8px" marginBottom="20px">
+          {email && (email)}
         </Typography>
       </Stack>
 
