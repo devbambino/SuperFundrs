@@ -28,18 +28,11 @@ const NavMenu = ({ setStep, activeStep }: NavMenuProps) => {
             02
           </OrderLabel>
           <Typography fontWeight="700" fontSize="20px" marginLeft="12px">
-            Proposals
+            Get Tokens
           </Typography>
         </NavItem>
 
-        <NavItem onClick={() => setStep(2)} active={activeStep === 2}>
-          <OrderLabel fontSize="10px" fontWeight="700">
-            03
-          </OrderLabel>
-          <Typography fontWeight="700" fontSize="20px" marginLeft="12px">
-            Transfers
-          </Typography>
-        </NavItem>
+        
       </MenuList>
     </NavMenuContainer>
   )
